@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="SK Assistant"/>
+<meta name="theme-color" content="#0a0a0f"/>
+<link rel="manifest" href="manifest.json"/>
+<title>SK Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#0a0a0f; --surface:#111118; --surface2:#1a1a24;
+  --border:#2a2a3a; --accent:#7c6af7; --accent2:#4fd1c5;
+  --text:#e8e8f0; --text-muted:#666680;
+  --user-bubble:#1e1e2e; --ai-bubble:#13131e; --danger:#f87171;
+  --search-color:#f6ad55;
+}
+body.light-mode {
+  --bg:#f0f0f8; --surface:#ffffff; --surface2:#e8e8f4;
+  --border:#d0d0e0; --accent:#6a58e8; --accent2:#2bb8a8;
+  --text:#1a1a2e; --text-muted:#7070a0;
+  --user-bubble:#e8e8f4; --ai-bubble:#f5f5fc; --danger:#e05555;
+  --search-color:#c87020;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:40px;width:100%;max-width:400px;text-align:center;position:relative;overflow:hidden;}
+.login-card::before{content:'';position:absolute;top:-60px;left:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(124,106,247,0.15) 0%,transparent 70%);pointer-events:none;}
+.login-card::after{content:'';position:absolute;bottom:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(79,209,197,0.1) 0%,transparent 70%);pointer-events:none;}
+.logo-mark{width:60px;height:60px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:26px;box-shadow:0 0 40px rgba(124,106,247,0.3);}
+.login-title{font-size:26px;font-weight:800;margin-bottom:6px;background:linear-gradient(135deg,#fff,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.login-sub{color:var(--text-muted);font-size:13px;margin-bottom:28px;line-height:1.5;}
+#google-signin-btn{width:100%;padding:13px 20px;background:#fff;color:#1f1f1f;border:none;border-radius:12px;font-family:'Syne',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.3);}
+#google-signin-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,0.4);}
+#google-signin-btn svg{width:18px;height:18px;flex-shrink:0;}
+.divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text-muted);font-size:12px;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.manual-section{text-align:left;}
+.manual-section label{display:block;font-size:11px;color:var(--text-muted);margin-bottom:5px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;}
+.input-group{margin-bottom:12px;}
+.input-group input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;transition:border-color 0.2s;}
+.input-group input:focus{border-color:var(--accent);}
+.input-group input::placeholder{color:var(--text-muted);}
+#manual-login-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),#5a4fcf);color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;}
+#manual-login-btn:hover{opacity:0.9;transform:translateY(-1px);}
+.login-note{margin-top:16px;font-size:11px;color:var(--text-muted);}
+
+/* APP */
+#app{display:none;flex-direction:column;height:100vh;}
+#app.visible{display:flex;}
+
+/* HEADER */
+.header{height:54px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:6px;flex-shrink:0;overflow:hidden;}
+.header-logo{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.header-title{font-size:15px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.model-badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--accent2);font-family:'JetBrains Mono',monospace;}
+@media(max-width:600px){.model-badge{display:none;} #memory-badge{display:none !important;} #search-status-badge{font-size:10px;padding:2px 6px;}}
+.search-badge{background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.3);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--search-color);font-family:'JetBrains Mono',monospace;cursor:pointer;transition:all 0.2s;}
+.search-badge:hover{background:rgba(246,173,85,0.2);}
+.search-badge.active{background:rgba(246,173,85,0.2);border-color:var(--search-color);}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;overflow:hidden;flex-shrink:0;}
+.user-avatar img{width:100%;height:100%;object-fit:cover;}
+
+/* LAYOUT */
+.layout{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:230px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+@media(max-width:600px){.sidebar{display:none;}}
+.sidebar-header{padding:14px;border-bottom:1px solid var(--border);}
+#new-chat-btn{width:100%;padding:9px 12px;background:linear-gradient(135deg,var(--accent),#5a4fcf);color:#fff;border:none;border-radius:9px;font-family:'Syne',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;transition:opacity 0.2s;}
+#new-chat-btn:hover{opacity:0.85;}
+.chat-history{flex:1;overflow-y:auto;padding:6px;}
+.chat-history::-webkit-scrollbar{width:3px;}
+.chat-history::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.history-section-label{font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-muted);padding:8px 10px 4px;opacity:0.6;}
+.history-item{padding:8px 11px;border-radius:7px;font-size:13px;color:var(--text-muted);cursor:pointer;transition:all 0.15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;display:flex;align-items:center;gap:6px;position:relative;group:true;}
+.history-item:hover,.history-item.active{background:var(--surface2);color:var(--text);}
+.history-item .chat-icon{font-size:12px;flex-shrink:0;opacity:0.7;}
+.history-item .chat-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.history-item .delete-btn{display:none;background:none;border:none;color:var(--text-muted);cursor:pointer;padding:2px 4px;border-radius:4px;font-size:13px;line-height:1;flex-shrink:0;}
+.history-item:hover .delete-btn{display:block;}
+.history-item .delete-btn:hover{color:var(--danger);}
+.sidebar-footer{padding:10px;border-top:1px solid var(--border);}
+#logout-btn{width:100%;padding:8px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:7px;font-family:'Syne',sans-serif;font-size:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;}
+#logout-btn:hover{color:var(--danger);border-color:var(--danger);}
+
+/* CHAT */
+.chat-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:18px;scroll-behavior:smooth;}
+.messages::-webkit-scrollbar{width:3px;}
+.messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;padding:30px 20px;gap:14px;}
+.welcome-icon{width:68px;height:68px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 0 50px rgba(124,106,247,0.25);animation:pulse 3s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 50px rgba(124,106,247,0.25);}50%{box-shadow:0 0 70px rgba(124,106,247,0.45);}}
+.welcome h2{font-size:22px;font-weight:800;}
+.welcome p{color:var(--text-muted);font-size:14px;max-width:320px;line-height:1.6;}
+.suggestions{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;max-width:460px;margin-top:6px;}
+.suggestion-chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:13px;color:var(--text-muted);cursor:pointer;transition:all 0.2s;}
+.suggestion-chip:hover{border-color:var(--accent);color:var(--text);background:rgba(124,106,247,0.1);}
+.message{display:flex;gap:10px;max-width:760px;width:100%;margin:0 auto;animation:fadeUp 0.3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.message.user{flex-direction:row-reverse;}
+.msg-avatar{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;margin-top:2px;overflow:hidden;}
+.message.user .msg-avatar{background:linear-gradient(135deg,var(--accent),var(--accent2));}
+.message.ai .msg-avatar{background:linear-gradient(135deg,#2d2d3f,#1a1a2e);border:1px solid var(--border);font-size:15px;}
+.msg-avatar img{width:100%;height:100%;object-fit:cover;}
+.msg-content{flex:1;min-width:0;}
+.msg-name{font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:5px;}
+.message.user .msg-name{text-align:right;color:var(--accent);}
+.message.ai .msg-name{color:var(--accent2);}
+.msg-bubble{padding:12px 16px;border-radius:14px;font-size:14px;line-height:1.7;}
+.message.user .msg-bubble{background:var(--user-bubble);border:1px solid var(--border);border-top-right-radius:4px;}
+.message.ai .msg-bubble{background:var(--ai-bubble);border:1px solid var(--border);border-top-left-radius:4px;}
+.msg-bubble pre{background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:7px;padding:10px;margin:7px 0;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.5;}
+.msg-bubble code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(124,106,247,0.15);padding:2px 5px;border-radius:4px;color:var(--accent2);}
+.msg-bubble pre code{background:none;padding:0;color:var(--text);}
+.typing-indicator{display:flex;gap:4px;padding:4px 0;align-items:center;}
+.typing-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:typing 1.2s ease-in-out infinite;}
+.typing-dot:nth-child(2){animation-delay:0.2s;background:var(--accent2);}
+.typing-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes typing{0%,100%{transform:translateY(0);opacity:0.4;}50%{transform:translateY(-5px);opacity:1;}}
+.msg-actions{margin-top:5px;display:flex;gap:4px;}
+.tts-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);padding:3px 7px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;display:inline-flex;align-items:center;gap:4px;transition:all 0.2s;}
+.tts-btn:hover{color:var(--accent2);background:rgba(79,209,197,0.1);}
+.tts-btn.speaking{color:var(--accent2);animation:speakPulse 0.8s ease-in-out infinite;}
+@keyframes speakPulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+
+/* SEARCH RESULTS CARD */
+.search-results-card{background:rgba(246,173,85,0.05);border:1px solid rgba(246,173,85,0.2);border-radius:12px;padding:12px 14px;margin-bottom:8px;font-size:13px;}
+.search-results-card .search-header{font-size:11px;color:var(--search-color);font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+.search-result-item{padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.search-result-item:last-child{border-bottom:none;}
+.search-result-title{color:var(--accent2);font-size:13px;font-weight:600;margin-bottom:2px;}
+.search-result-title a{color:var(--accent2);text-decoration:none;}
+.search-result-title a:hover{text-decoration:underline;}
+.search-result-snippet{color:var(--text-muted);font-size:12px;line-height:1.5;}
+.search-result-url{color:#4a4a6a;font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* INPUT */
+.input-area{padding:14px 18px 18px;background:var(--bg);border-top:1px solid var(--border);flex-shrink:0;}
+.input-container{max-width:760px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:14px;display:flex;align-items:flex-end;gap:8px;padding:10px 12px;transition:border-color 0.2s;}
+.input-container:focus-within{border-color:var(--accent);}
+#message-input{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:'Syne',sans-serif;font-size:14px;line-height:1.5;resize:none;max-height:150px;min-height:22px;}
+#message-input::placeholder{color:var(--text-muted);}
+#mic-btn{width:36px;height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;color:var(--text-muted);}
+#mic-btn:hover{border-color:var(--accent);color:var(--accent);}
+#mic-btn.recording{background:rgba(248,113,113,0.15);border-color:var(--danger);color:var(--danger);animation:micPulse 1s ease-in-out infinite;}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,0.4);}50%{box-shadow:0 0 0 7px rgba(248,113,113,0);}}
+#auto-speak-btn{width:36px;height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;color:var(--text-muted);}
+#auto-speak-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+#auto-speak-btn.active{color:var(--accent2);border-color:var(--accent2);background:rgba(79,209,197,0.1);}
+/* Search toggle button in input */
+#search-toggle-btn{width:36px;height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;color:var(--text-muted);}
+#search-toggle-btn:hover{border-color:var(--search-color);color:var(--search-color);}
+#search-toggle-btn.active{color:var(--search-color);border-color:var(--search-color);background:rgba(246,173,85,0.1);}
+#send-btn{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),#5a4fcf);border:none;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;color:#fff;}
+#send-btn:hover{opacity:0.85;transform:scale(1.05);}
+#send-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.voice-bar{display:flex;align-items:center;justify-content:space-between;max-width:760px;margin:8px auto 0;gap:8px;}
+#voice-mode-btn{display:flex;align-items:center;gap:6px;padding:6px 14px;background:linear-gradient(135deg,rgba(124,106,247,0.15),rgba(79,209,197,0.1));border:1px solid rgba(124,106,247,0.3);border-radius:20px;color:var(--accent);font-family:'Syne',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+#voice-mode-btn:hover{background:rgba(124,106,247,0.25);}
+#voice-mode-btn.active{background:rgba(248,113,113,0.15);border-color:var(--danger);color:var(--danger);}
+.voice-hint{font-size:11px;color:var(--text-muted);}
+
+/* VOICE OVERLAY */
+#voice-overlay{display:none;position:fixed;inset:0;background:rgba(10,10,15,0.93);backdrop-filter:blur(14px);z-index:200;align-items:center;justify-content:center;flex-direction:column;}
+#voice-overlay.active{display:flex;}
+.voice-card{background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:44px 38px;text-align:center;width:300px;display:flex;flex-direction:column;align-items:center;gap:18px;box-shadow:0 0 80px rgba(124,106,247,0.2);}
+.voice-icon{width:80px;height:80px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;animation:voicePulse 2s ease-in-out infinite;}
+@keyframes voicePulse{0%,100%{box-shadow:0 0 0 0 rgba(124,106,247,0.4);}50%{box-shadow:0 0 0 18px rgba(124,106,247,0);}}
+.voice-waves{display:flex;align-items:center;gap:4px;height:44px;}
+.wave-bar{width:4px;background:var(--accent);border-radius:3px;height:8px;}
+.voice-waves.listening .wave-bar{animation:waveDance 0.7s ease-in-out infinite;}
+.voice-waves.listening .wave-bar:nth-child(2){animation-delay:0.1s;background:var(--accent2);}
+.voice-waves.listening .wave-bar:nth-child(3){animation-delay:0.2s;}
+.voice-waves.listening .wave-bar:nth-child(4){animation-delay:0.3s;background:var(--accent2);}
+.voice-waves.listening .wave-bar:nth-child(5){animation-delay:0.2s;}
+.voice-waves.listening .wave-bar:nth-child(6){animation-delay:0.1s;background:var(--accent2);}
+@keyframes waveDance{0%,100%{height:6px;}50%{height:36px;}}
+.voice-status{font-size:16px;font-weight:700;color:var(--text);}
+.voice-transcript{font-size:13px;color:var(--text-muted);min-height:18px;font-style:italic;max-width:220px;line-height:1.4;}
+.voice-stop-btn{padding:9px 22px;background:rgba(248,113,113,0.15);color:var(--danger);border:1px solid var(--danger);border-radius:20px;font-family:'Syne',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.voice-stop-btn:hover{background:rgba(248,113,113,0.28);}
+
+/* THEME TOGGLE */
+#theme-toggle-btn{width:30px;height:30px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all 0.2s;flex-shrink:0;}
+#theme-toggle-btn:hover{border-color:var(--accent);transform:scale(1.08);}
+
+/* Light mode adjustments */
+body.light-mode .msg-bubble pre{background:rgba(0,0,0,0.06);border-color:var(--border);}
+body.light-mode .msg-bubble code{background:rgba(106,88,232,0.1);}
+body.light-mode .login-card{box-shadow:0 8px 40px rgba(0,0,0,0.12);}
+body.light-mode #voice-overlay{background:rgba(240,240,248,0.93);}
+body.light-mode .voice-card{box-shadow:0 0 80px rgba(106,88,232,0.15);}
+body.light-mode .search-results-card{background:rgba(200,112,32,0.05);}
+
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 18px;font-size:13px;color:var(--text);z-index:999;opacity:0;transition:all 0.3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="logo-mark">✦</div>
+    <div class="login-title">SK Assistant</div>
+    <div class="login-sub">Designed by Shivam Sir • DeepSeek R1 + Google Search<br/>Login karein aur shuru karein</div>
+    <button id="google-signin-btn" onclick="googleSignIn()">
+      <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      Google se Login
+    </button>
+    <div class="divider">ya naam se login karein</div>
+    <div class="manual-section">
+      <div class="input-group">
+        <label>Aapka Naam</label>
+        <input type="text" id="manual-name" placeholder="Jaise: Rahul Kumar" onkeydown="if(event.key==='Enter')document.getElementById('manual-email').focus()"/>
+      </div>
+      <div class="input-group">
+        <label>Email (optional)</label>
+        <input type="text" id="manual-email" placeholder="aap@example.com (zaruri nahi)"/>
+      </div>
+      <button id="manual-login-btn" onclick="manualLogin()">Shuru Karein →</button>
+    </div>
+    <div class="login-note">Aapka data sirf browser mein rehta hai.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="header">
+    <div class="header-logo">✦</div>
+    <div class="header-title">SK Assistant</div>
+    <div class="model-badge" id="model-badge">SK Assistant • Connected</div>
+    <div class="search-badge" id="search-status-badge" onclick="toggleSearchMode()" title="Google Search Toggle">🔍 Search OFF</div>
+    <div class="search-badge" id="memory-badge" onclick="openMemoryPanel()" title="Long-term Memory" style="background:rgba(79,209,197,0.1);border-color:rgba(79,209,197,0.3);color:var(--accent2);">🧠 Memory <span id="memory-count-badge">0</span></div>
+    <button id="theme-toggle-btn" onclick="toggleTheme()" title="Dark/Light Mode">🌙</button>
+    <div class="user-avatar" id="user-avatar-btn" onclick="logout()" title="Sign Out"></div>
+  </div>
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <button id="new-chat-btn" onclick="newChat()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nayi Chat
+        </button>
+      </div>
+      <div class="chat-history" id="chat-history">
+      </div>
+      <div class="sidebar-footer">
+        <button id="logout-btn" onclick="logout()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </button>
+      </div>
+    </div>
+    <div class="chat-area">
+      <div class="messages" id="messages">
+        <div class="welcome" id="welcome">
+          <div class="welcome-icon">✦</div>
+          <h2>Hello, <span id="welcome-name">there</span>!</h2>
+          <p>Main SK Assistant hoon — Shivam Sir ne design kiya hai. Text ya voice mein baat karo! 🔍 Google Search bhi ON kar sakte ho!</p>
+          <div class="suggestions">
+            <div class="suggestion-chip" onclick="sendSuggestion('Aaj ka cricket score kya hai?')">🏏 Cricket Score</div>
+            <div class="suggestion-chip" onclick="sendSuggestion('Python mein for loop likhao')">Python code</div>
+            <div class="suggestion-chip" onclick="sendSuggestion('Aaj ka mausam kaisa hai India mein?')">🌤 Mausam</div>
+            <div class="suggestion-chip" onclick="sendSuggestion('Business plan banao')">Business plan</div>
+          </div>
+        </div>
+      </div>
+      <div class="input-area">
+        <div class="input-container">
+          <button id="mic-btn" onclick="toggleMic()" title="Mic se bolein">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <textarea id="message-input" placeholder="Message likhein ya mic dabayein..." rows="1" onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
+          <button id="search-toggle-btn" onclick="toggleSearchMode()" title="Google Search ON/OFF">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <button id="auto-speak-btn" class="active" onclick="toggleAutoSpeak()" title="Auto Speak ON/OFF">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          </button>
+          <button id="send-btn" onclick="sendMessage()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div class="voice-bar">
+          <button id="voice-mode-btn" onclick="startVoiceMode()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+            🎙️ Voice Conversation Shuru Karo
+          </button>
+          <span class="voice-hint">SK Assistant • Designed by Shivam Sir</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VOICE OVERLAY -->
+<div id="voice-overlay">
+  <div class="voice-card">
+    <div class="voice-icon" id="voice-icon">🎤</div>
+    <div class="voice-waves" id="voice-waves">
+      <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div>
+    </div>
+    <div class="voice-status" id="voice-status">🎤 Bol rahe hain...</div>
+    <div class="voice-transcript" id="voice-transcript"></div>
+    <button class="voice-stop-btn" onclick="stopVoiceMode()">✕ Band Karo</button>
+  </div>
+</div>
+
+<!-- MEMORY PANEL -->
+<div id="memory-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,10,15,0.85);backdrop-filter:blur(10px);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:28px;width:92%;max-width:420px;max-height:80vh;display:flex;flex-direction:column;gap:14px;box-shadow:0 0 60px rgba(79,209,197,0.15);">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:16px;font-weight:800;">🧠 Long-term Memory</div>
+      <button onclick="closeMemoryPanel()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;line-height:1;">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);line-height:1.5;">Ye memories hamesha yaad rehti hain — nayi chat mein bhi, doosre device pe bhi (agar JSONBin key set hai). Auto-save + cloud sync. 🔄</div>
+    <!-- Add memory manually -->
+    <div style="display:flex;gap:8px;">
+      <input id="memory-input" type="text" placeholder="Kuch batao... (e.g. Mera naam Rahul hai)" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')addMemoryManual()"/>
+      <button onclick="addMemoryManual()" style="padding:9px 14px;background:linear-gradient(135deg,var(--accent2),#38b2a0);color:#fff;border:none;border-radius:9px;font-family:'Syne',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">+ Add</button>
+    </div>
+    <!-- Memory list -->
+    <div id="memory-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:7px;max-height:280px;">
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="syncToCloud()" style="flex:1;padding:9px;background:linear-gradient(135deg,rgba(79,209,197,0.15),rgba(79,209,197,0.05));color:var(--accent2);border:1px solid rgba(79,209,197,0.3);border-radius:9px;font-family:'Syne',sans-serif;font-size:12px;cursor:pointer;" id="sync-btn">☁ Cloud Sync</button>
+      <button onclick="clearAllMemories()" style="flex:1;padding:9px;background:transparent;color:var(--danger);border:1px solid rgba(248,113,113,0.3);border-radius:9px;font-family:'Syne',sans-serif;font-size:12px;cursor:pointer;">🗑 Sab Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// API KEYS
+// ============================================================
+var OPENROUTER_API_KEY = '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';
+// JSONBin.io — free cloud backup for memories + chat history
+// Step 1: jsonbin.io pe account banao (free)
+// Step 2: API Keys section mein jaake key copy karo
+// Step 3: Neeche YOUR_JSONBIN_API_KEY ki jagah apni key daalo
+var JSONBIN_API_KEY = 'YOUR_JSONBIN_API_KEY';
+var JSONBIN_BIN_ID = null; // Auto-create hoga pehli baar
+
+// ============================================================
+// SYSTEM PROMPT
+// ============================================================
+var SYSTEM = `You are SK Assistant — a highly capable AI assistant and EXPERT SOFTWARE ENGINEER designed by Shivam Sir. This is your complete identity. Never refer to or mention any other AI system by name.
+
+YOUR IDENTITY (answer these directly, no search needed):
+- Name: SK Assistant
+- Created by: Shivam Sir
+- Languages: Hindi, English, Hinglish (Hindi+English mix), and basic understanding of Telugu, Tamil, Malayalam, Kannada
+- What you are: A smart AI assistant and expert coder designed by Shivam Sir
+
+RESPONSE STYLE — Follow these rules strictly:
+1. Give clear, helpful, well-structured answers
+2. Use bullet points or numbered lists when explaining steps or multiple items
+3. For coding questions: provide clean, working code with brief explanation
+4. For factual questions: give direct, accurate answers
+5. For creative tasks: be thorough and detailed
+6. Keep conversational replies natural and friendly
+7. For complex topics: break down into simple parts
+8. Always complete the answer fully — don't cut off midway
+9. Use **bold** for important terms or headings when needed
+10. Respond in the same language the user writes in (Hindi → Hindi, English → English, Hinglish → Hinglish)
+
+ADVANCED CODING RULES — Follow these strictly for any programming task:
+- You are a SENIOR FULL-STACK ENGINEER with expertise in: HTML/CSS/JS, React, Python, Node.js, Java, C/C++, SQL, REST APIs, algorithms, data structures, system design, and more
+- Always write COMPLETE, RUNNABLE code — never write partial or placeholder code like "// add logic here"
+- For every code request: write the FULL solution from top to bottom, production-quality
+- Add clear comments inside code so the user understands each important part
+- If building a UI/web project: make it visually beautiful with modern CSS, gradients, animations
+- For complex apps: structure code properly with functions, error handling, and edge cases covered
+- Always explain: (1) what the code does, (2) how to run/use it, (3) any dependencies needed
+- If user asks to "improve" or "fix" code: analyze all bugs, fix them all, and explain what was wrong
+- For algorithms: show time complexity (Big O) and explain the approach
+- If a project needs multiple files: show ALL files completely, one by one
+- Never truncate code — if it's long, keep writing until it's 100% complete
+- Think step-by-step before writing code: plan the architecture, then implement
+
+SEARCH RESULTS: If search results are provided, use them for up-to-date answers.
+
+SMART RULE — Skip search context for:
+- Questions about your own identity/capabilities
+- General knowledge you already know well
+- Personal questions about yourself
+
+IMPORTANT INFO: Toxic movie (Yash) releases 4 June 2026 — in Kannada, Hindi, Telugu, Tamil, Malayalam, English.
+
+Never write citation numbers like [1][2][3] in responses.
+Never mention the device live time in your response — it's for internal use only.
+For simple/personal questions: give short, direct answers without unnecessary padding.`; 
+
+
+// ============================================================
+// STATE
+// ============================================================
+var currentUser = null;
+var userName = null; // First name extracted from login or chat
+var messages = [];
+var isLoading = false;
+var voiceModeActive = false;
+var recognition = null;
+var isRecording = false;
+var isSpeaking = false;
+var autoSpeakEnabled = true;
+var searchModeEnabled = false;  // Google Search toggle
+var currentUtterance = null;    // Currently speaking utterance
+var rukoDetected = false;
+var allChats = [];
+var activeChatId = null;
+var userMemories = []; // Long-term memory: [{id, text, date}]
+
+// ============================================================
+// SEARCH MODE TOGGLE
+// ============================================================
+function toggleSearchMode() {
+  searchModeEnabled = !searchModeEnabled;
+  var btn = document.getElementById('search-toggle-btn');
+  var badge = document.getElementById('search-status-badge');
+  if (searchModeEnabled) {
+    btn.classList.add('active');
+    badge.classList.add('active');
+    badge.textContent = '🔍 Search ON';
+    showToast('🔍 Google Search ON — ab real-time results milenge!');
+  } else {
+    btn.classList.remove('active');
+    badge.classList.remove('active');
+    badge.textContent = '🔍 Search OFF';
+    showToast('🔍 Google Search OFF');
+  }
+}
+
+// ============================================================
+// REAL-TIME SEARCH — DuckDuckGo + Wikipedia (CORS-friendly, no API key needed)
+// ============================================================
+async function googleSearch(query) {
+  var results = [];
+  try {
+    // 1. DuckDuckGo Instant Answer API
+    var ddgUrl = 'https://api.duckduckgo.com/?q=' + encodeURIComponent(query) + '&format=json&no_html=1&skip_disambig=1';
+    var ddgRes = await fetch(ddgUrl);
+    if (ddgRes.ok) {
+      var ddg = await ddgRes.json();
+      if (ddg.AbstractText) results.push({ title: ddg.Heading || query, snippet: ddg.AbstractText.slice(0, 200), link: ddg.AbstractURL || '' });
+      if (ddg.Answer) results.push({ title: 'Direct Answer', snippet: ddg.Answer, link: '' });
+      if (ddg.Definition) results.push({ title: 'Definition', snippet: ddg.Definition, link: ddg.DefinitionURL || '' });
+      if (ddg.RelatedTopics && ddg.RelatedTopics.length) {
+        ddg.RelatedTopics.slice(0, 3).forEach(function(t) {
+          if (t.Text && t.FirstURL) results.push({ title: t.Name || 'Related', snippet: t.Text.slice(0, 120), link: t.FirstURL });
+        });
+      }
+    }
+  } catch(e) { console.error('DuckDuckGo error:', e); }
+
+  try {
+    // 2. Wikipedia Summary API (CORS allowed, great for factual queries)
+    var wikiTopic = query.split(' ').slice(0, 4).join('_');
+    var wikiUrl = 'https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(wikiTopic);
+    var wikiRes = await fetch(wikiUrl);
+    if (wikiRes.ok) {
+      var wiki = await wikiRes.json();
+      if (wiki.extract && wiki.type !== 'disambiguation') {
+        results.push({ title: wiki.title || query, snippet: wiki.extract.slice(0, 150) + '...', link: wiki.content_urls && wiki.content_urls.desktop ? wiki.content_urls.desktop.page : '' });
+      }
+    }
+  } catch(e) { /* Wikipedia miss — ok */ }
+
+  return results.length ? { _results: results } : null;
+}
+
+function formatSearchResults(data) {
+  if (!data) return null;
+  // Support both new _results format and old organic format
+  if (data._results) return data._results;
+  var results = [];
+  if (data.answer_box) {
+    var ab = data.answer_box;
+    var answer = ab.answer || ab.snippet || ab.result || '';
+    if (answer) results.push({ title: ab.title || 'Direct Answer', snippet: answer, link: ab.link || '' });
+  }
+  if (data.knowledge_graph && data.knowledge_graph.description) {
+    results.push({ title: data.knowledge_graph.title || 'Knowledge Graph', snippet: data.knowledge_graph.description, link: data.knowledge_graph.website || '' });
+  }
+  if (data.organic_results) {
+    data.organic_results.slice(0, 4).forEach(function(r) {
+      results.push({ title: r.title || '', snippet: r.snippet || '', link: r.link || '' });
+    });
+  }
+  return results.length ? results : null;
+}
+
+function buildSearchResultsHTML(results, query) {
+  var html = '<div class="search-results-card">';
+  html += '<div class="search-header">🔍 Google Search: ' + escapeHtml(query) + '</div>';
+  results.forEach(function(r) {
+    html += '<div class="search-result-item">';
+    html += '<div class="search-result-title">';
+    if (r.link) {
+      html += '<a href="' + r.link + '" target="_blank" rel="noopener">' + escapeHtml(r.title) + ' ↗</a>';
+    } else {
+      html += escapeHtml(r.title);
+    }
+    html += '</div>';
+    if (r.snippet) html += '<div class="search-result-snippet">' + escapeHtml(r.snippet) + '</div>';
+    if (r.link) html += '<div class="search-result-url">' + r.link + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function escapeHtml(t) {
+  return (t || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.onload = function() {
+  applyTheme();
+  var saved = localStorage.getItem('dc_user');
+  if (saved) {
+    try { currentUser = JSON.parse(saved); showApp(); } catch(e) { localStorage.removeItem('dc_user'); }
+  }
+  if (window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); };
+  }
+};
+
+// ============================================================
+// AUTH
+// ============================================================
+function googleSignIn() {
+  var name = prompt('Google Sign-In\nApna naam likhein:');
+  if (!name || !name.trim()) return;
+  var email = prompt('Email likhein:');
+  if (!email || !email.trim()) return;
+  setUser(name.trim(), email.trim());
+  showToast('✓ ' + currentUser.name + ' ke taur par login!');
+}
+
+function manualLogin() {
+  var name = document.getElementById('manual-name').value.trim();
+  var email = document.getElementById('manual-email').value.trim();
+  if (!name) { showToast('⚠ Apna naam bharein'); return; }
+  setUser(name, email || name.toLowerCase().replace(/\s+/g,'') + '@user.com');
+  showToast('✓ Swagat hai, ' + name + '!');
+}
+
+function setUser(name, email) {
+  currentUser = { name: name, email: email, avatar: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=7c6af7&color=fff&bold=true&size=64' };
+  userName = name.split(' ')[0]; // First name
+  localStorage.setItem('dc_user', JSON.stringify(currentUser));
+  showApp();
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  if (currentUser && !userName) userName = currentUser.name.split(' ')[0]; // restore on reload
+  var el = document.getElementById('user-avatar-btn');
+  var initial = currentUser.name[0].toUpperCase();
+  el.textContent = initial;
+  if (currentUser.avatar) {
+    var img = new Image();
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+    img.onload = function() { el.textContent = ''; el.appendChild(img); };
+    img.onerror = function() { el.textContent = initial; };
+    img.src = currentUser.avatar;
+  }
+  var wn = document.getElementById('welcome-name');
+  if (wn) wn.textContent = currentUser.name.split(' ')[0];
+  // Load saved chats
+  loadChats();
+  loadMemories();
+  if (allChats.length) {
+    switchChat(allChats[0].id);
+  } else {
+    newChat();
+  }
+}
+
+function logout() {
+  if (!confirm('Sign out karein?')) return;
+  stopVoiceMode();
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  localStorage.removeItem('dc_user');
+  currentUser = null; messages = [];
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+// ============================================================
+// SEND MESSAGE
+// ============================================================
+async function sendMessage() {
+  if (isLoading) return;
+  var input = document.getElementById('message-input');
+  var text = input.value.trim();
+  if (!text) return;
+  var welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+  input.value = '';
+  autoResize(input);
+  messages.push({ role: 'user', content: text });
+  appendMessage('user', text);
+  updateChatHistory(text);
+  await callAI(text);
+}
+
+// ============================================================
+// MAIN AI CALL (with optional Google Search)
+// ============================================================
+async function callAI(userQuery) {
+  if (isLoading) return;
+  // Naya sawaal aaya — agar pehle ki awaaz chal rahi hai to turant band karo
+  stopSpeaking();
+  isLoading = true;
+  document.getElementById('send-btn').disabled = true;
+  document.getElementById('mic-btn').disabled = true;
+
+  // Typing indicator
+  var typingEl = document.createElement('div');
+  typingEl.className = 'message ai';
+  typingEl.id = 'typing-msg';
+  typingEl.innerHTML = '<div class="msg-avatar">✦</div><div class="msg-content"><div class="msg-name">SK Assistant</div><div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div>';
+  document.getElementById('messages').appendChild(typingEl);
+  scrollToBottom();
+
+  var searchResultsHTML = null;
+  var searchContext = '';
+
+  // ── Step 1: Smart Search Decision ──
+  // Pehle check karo: kya yeh personal/identity sawaal hai?
+  function isPersonalQuestion(q) {
+    q = q.toLowerCase();
+    var personal = [
+      'tumhara naam','tera naam','your name','aapka naam',
+      'kaun ho tum','who are you','tum kaun','aap kaun',
+      'kisne banaya','who made you','who created you','kisne design',
+      'tumhe kya aata','kaun si language','what languages','kya kya aata',
+      'tumhari capability','tum kya ho','what are you','aap kya ho',
+      'apne baare','about yourself','tumhare baare','apna parichay',
+      'who designed you','designed by','tumhe kisne','aapko kisne',
+      'kya kar sakte','what can you do','tumhari khasiyat'
+    ];
+    return personal.some(function(kw){ return q.indexOf(kw) !== -1; });
+  }
+  var shouldSkipSearch = isPersonalQuestion(userQuery);
+  if (searchModeEnabled && userQuery && !shouldSkipSearch) {
+    try {
+      updateTypingLabel('🔍 Google search ho raha hai...');
+      var serpData = await googleSearch(userQuery);
+      var results = formatSearchResults(serpData);
+      if (results && results.length) {
+        searchResultsHTML = buildSearchResultsHTML(results, userQuery);
+        // Build context for AI
+        searchContext = '\n\n[GOOGLE SEARCH RESULTS for "' + userQuery + '"]:\n';
+        results.forEach(function(r, i) {
+          searchContext += (i+1) + '. ' + r.title + ': ' + r.snippet + '\n';
+        });
+        searchContext += '\nIn search results ke aadhar par updated jawab dein.';
+      }
+      updateTypingLabel('🤔 Soch raha hoon...');
+    } catch(e) {
+      console.error('Search error:', e);
+    }
+  }
+
+  // ── Step 2: Build messages for AI ──
+  // Live device time inject karo har request mein
+  var now = new Date();
+  var istOffset = 5.5 * 60 * 60 * 1000;
+  var istTime = new Date(now.getTime() + istOffset);
+  var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var hours = istTime.getUTCHours();
+  var mins = istTime.getUTCMinutes();
+  var ampm = hours >= 12 ? 'PM' : 'AM';
+  var h12 = hours % 12 || 12;
+  var minsStr = mins < 10 ? '0' + mins : '' + mins;
+  var liveTimeStr = days[istTime.getUTCDay()] + ', ' + istTime.getUTCDate() + ' ' + months[istTime.getUTCMonth()] + ' ' + istTime.getUTCFullYear() + ', ' + h12 + ':' + minsStr + ' ' + ampm + ' IST';
+  var systemWithTime = SYSTEM + ' [DEVICE LIVE TIME: ' + liveTimeStr + ' — yahi sahi time hai, isi ko use karo time/date ke sawaalon mein]';
+  // User ka naam inject karo — naam se pukaro
+  if (userName) {
+    systemWithTime += '\n\nUSER KA NAAM: ' + userName + ' — Jab bhi greet karo ya personally address karo, hamesha "' + userName + '" naam use karo. Jaise: "Haan ' + userName + '", "Bilkul ' + userName + '", "Acha ' + userName + ' ji" wagera.';
+  }
+  // Memory context inject karo
+  if (userMemories.length) {
+    var memLines = userMemories.map(function(m){ return '- ' + m.text; }).join('\n');
+    systemWithTime += '\n\nUSER LONG-TERM MEMORY (ye user ne pehle bataya tha, hamesha yaad rakho):\n' + memLines;
+  }
+  var aiMessages = [{ role: 'system', content: systemWithTime }].concat(messages);
+  // If search context, inject it into the last user message
+  if (searchContext) {
+    var lastIdx = aiMessages.length - 1;
+    // Find last user message and append search context
+    for (var i = aiMessages.length - 1; i >= 0; i--) {
+      if (aiMessages[i].role === 'user') {
+        aiMessages = aiMessages.slice(); // copy
+        aiMessages[i] = { role: 'user', content: aiMessages[i].content + searchContext };
+        break;
+      }
+    }
+  }
+
+  // ── Step 3: Always use best model ──
+  var selectedGPT = { model: 'openai/gpt-oss-120b:free', label: 'SK Assistant • Connected' };
+
+  // ── Step 4: OpenRouter API call ──
+  try {
+    var res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + OPENROUTER_API_KEY,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://sk-assistant.netlify.app',
+        'X-Title': 'SK Assistant'
+      },
+      body: JSON.stringify({
+        model: selectedGPT.model,
+        messages: aiMessages,
+        max_tokens: 2048,
+        temperature: 0.7
+      })
+    });
+
+    if (!res.ok) {
+      var ed = await res.json().catch(function(){ return {}; });
+      throw new Error(ed.error ? ed.error.message : 'HTTP ' + res.status);
+    }
+    var data = await res.json();
+    var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    if (!reply) throw new Error('Koi jawab nahi mila');
+
+    messages.push({ role: 'assistant', content: reply });
+    var t = document.getElementById('typing-msg');
+    if (t) t.remove();
+
+    // Auto-extract memory from user's message
+    autoExtractMemory(userQuery);
+
+    // Show search results card + AI reply together
+    appendMessageWithSearch('ai', reply, searchResultsHTML);
+    if (autoSpeakEnabled || voiceModeActive) speakText(reply);
+
+  } catch(err) {
+    var t2 = document.getElementById('typing-msg');
+    if (t2) t2.remove();
+    appendMessage('ai', '⚠ Error: ' + err.message + '\n\nOpenRouter API check karein.');
+    if (voiceModeActive) setTimeout(function(){ if (voiceModeActive && !isLoading) startListening(); }, 2000);
+  }
+
+  isLoading = false;
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('mic-btn').disabled = false;
+  scrollToBottom();
+  // Save messages to active chat
+  if (activeChatId) {
+    var cur = allChats.find(function(c){ return c.id === activeChatId; });
+    if (cur) { cur.messages = messages.slice(); saveChats(); }
+  }
+  saveConversationSnapshot();
+}
+
+function updateTypingLabel(text) {
+  var t = document.getElementById('typing-msg');
+  if (t) {
+    var bubble = t.querySelector('.msg-bubble');
+    if (bubble) bubble.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div><div style="font-size:12px;color:var(--text-muted);margin-top:6px;">' + text + '</div>';
+  }
+}
+
+// ============================================================
+// APPEND MESSAGE (with optional search card)
+// ============================================================
+function appendMessageWithSearch(role, content, searchHTML) {
+  var el = document.createElement('div');
+  el.className = 'message ' + role;
+  var avatarHtml = '✦';
+  var name = 'SK Assistant';
+  var ttsHtml = '<div class="msg-actions"><button class="tts-btn" onclick="speakBubble(this)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg> Sunao</button></div>';
+  var searchSection = searchHTML ? searchHTML : '';
+  el.innerHTML = '<div class="msg-avatar">' + avatarHtml + '</div><div class="msg-content"><div class="msg-name">' + name + '</div>' + searchSection + '<div class="msg-bubble">' + formatMsg(content) + '</div>' + ttsHtml + '</div>';
+  document.getElementById('messages').appendChild(el);
+  scrollToBottom();
+}
+
+function appendMessage(role, content) {
+  var el = document.createElement('div');
+  el.className = 'message ' + role;
+  var avatarHtml = role === 'user'
+    ? (currentUser && currentUser.avatar ? '<img src="' + currentUser.avatar + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\'" />' : (currentUser ? currentUser.name[0].toUpperCase() : 'U'))
+    : '✦';
+  var name = role === 'user' ? (currentUser ? currentUser.name : 'Aap') : 'SK Assistant';
+  var ttsHtml = role === 'ai' ? '<div class="msg-actions"><button class="tts-btn" onclick="speakBubble(this)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg> Sunao</button></div>' : '';
+  el.innerHTML = '<div class="msg-avatar">' + avatarHtml + '</div><div class="msg-content"><div class="msg-name">' + name + '</div><div class="msg-bubble">' + formatMsg(content) + '</div>' + ttsHtml + '</div>';
+  document.getElementById('messages').appendChild(el);
+  scrollToBottom();
+}
+
+function formatMsg(t) {
+  // Citation numbers hata do
+  t = t.replace(/\[\d+\]/g,'');
+
+  // Code blocks pehle extract karo (taki baaki replacements andar na jayein)
+  var codeBlocks = [];
+  t = t.replace(/```[\w]*\n?([\s\S]*?)```/g, function(_, code) {
+    codeBlocks.push(code);
+    return '\x00CODE' + (codeBlocks.length - 1) + '\x00';
+  });
+
+  // HTML escape
+  t = t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // Markdown Table render karo
+  t = t.replace(/((?:^|\n)\|.+\|(?:\n\|[-| :]+\|)?(?:\n\|.+\|)*)/g, function(tableBlock) {
+    var lines = tableBlock.trim().split('\n').filter(function(l){ return l.trim(); });
+    if (lines.length < 2) return tableBlock;
+    // Header
+    var headerCells = lines[0].split('|').filter(function(c,i,a){ return i > 0 && i < a.length - 1; });
+    // Check separator row
+    var sep = lines[1] && /^\|[-| :]+\|$/.test(lines[1].trim());
+    if (!sep) return tableBlock;
+    var dataLines = lines.slice(2);
+    var html = '<div style="overflow-x:auto;margin:10px 0;"><table style="width:100%;border-collapse:collapse;font-size:13px;">';
+    html += '<thead><tr>';
+    headerCells.forEach(function(c){
+      html += '<th style="background:rgba(124,106,247,0.15);border:1px solid var(--border);padding:8px 12px;text-align:left;font-weight:700;color:var(--accent2);white-space:nowrap;">' + c.trim() + '</th>';
+    });
+    html += '</tr></thead><tbody>';
+    dataLines.forEach(function(row, ri){
+      var cells = row.split('|').filter(function(c,i,a){ return i > 0 && i < a.length - 1; });
+      html += '<tr style="background:' + (ri%2===0 ? 'rgba(255,255,255,0.02)' : 'transparent') + '">';
+      cells.forEach(function(c){
+        html += '<td style="border:1px solid var(--border);padding:7px 12px;color:var(--text);">' + c.trim() + '</td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    return html;
+  });
+
+  // Inline code
+  t = t.replace(/`([^`]+)`/g,'<code>$1</code>');
+  // Bold & Italic
+  t = t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  t = t.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  // Newlines
+  t = t.replace(/\n/g,'<br/>');
+
+  // Code blocks wapas lagao
+  t = t.replace(/\x00CODE(\d+)\x00/g, function(_, i) {
+    return '<pre><code>' + codeBlocks[parseInt(i)].replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</code></pre>';
+  });
+
+  return t;
+}
+
+// ============================================================
+// MIC / VOICE
+// ============================================================
+function toggleMic() {
+  if (!window.SpeechRecognition && !window.webkitSpeechRecognition) { showToast('⚠ Chrome browser use karein'); return; }
+  if (isRecording) stopListening(); else startListening();
+}
+
+function startListening() {
+  if (isSpeaking) { window.speechSynthesis.cancel(); isSpeaking = false; }
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'hi-IN';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.onstart = function() {
+    isRecording = true;
+    document.getElementById('mic-btn').classList.add('recording');
+    if (voiceModeActive) { document.getElementById('voice-status').textContent = '🎤 Bol rahe hain...'; document.getElementById('voice-icon').textContent = '🎤'; document.getElementById('voice-waves').classList.add('listening'); }
+    else showToast('🎤 Sun raha hoon...');
+  };
+  recognition.onresult = function(e) {
+    var tr = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) tr += e.results[i][0].transcript;
+    document.getElementById('message-input').value = tr;
+    autoResize(document.getElementById('message-input'));
+    if (voiceModeActive) document.getElementById('voice-transcript').textContent = tr;
+
+    // "Ruko" / "stop" bolne pe awaaz turant band karo
+    var stopWords = ['ruko', 'ruk jao', 'chup', 'stop', 'bas', 'band karo', 'mat bolo', 'quiet', 'silence'];
+    var ltr = tr.toLowerCase().trim();
+    if (stopWords.some(function(w){ return ltr === w || ltr.indexOf(w) === 0; })) {
+      rukoDetected = true;
+      stopSpeaking();
+      document.getElementById('message-input').value = '';
+      if (voiceModeActive) {
+        document.getElementById('voice-transcript').textContent = '';
+        document.getElementById('voice-status').textContent = '🎤 Bol rahe hain...';
+        document.getElementById('voice-icon').textContent = '🎤';
+      }
+      // Sirf awaaz mein jawab do — chat mein koi message nahi
+      setTimeout(function() {
+        var utt = new SpeechSynthesisUtterance('haan boli sir, main sun raha hun');
+        utt.lang = 'hi-IN'; utt.rate = 0.92; utt.pitch = 1.1; utt.volume = 1;
+        var voices = window.speechSynthesis.getVoices();
+        var v = voices.find(function(x){ return x.lang.indexOf('hi') === 0; }) || voices.find(function(x){ return x.lang.indexOf('en-IN') === 0; });
+        if (v) utt.voice = v;
+        utt.onend = function() {
+          if (voiceModeActive && !isLoading) setTimeout(function(){ if(voiceModeActive) startListening(); }, 500);
+        };
+        window.speechSynthesis.speak(utt);
+      }, 200);
+      return;
+    }
+  };
+  recognition.onend = function() {
+    isRecording = false;
+    document.getElementById('mic-btn').classList.remove('recording');
+    document.getElementById('voice-waves').classList.remove('listening');
+    // Agar "ruko" detect hua tha to AI ko call mat karo
+    if (rukoDetected) { rukoDetected = false; return; }
+    var txt = document.getElementById('message-input').value.trim();
+    if (txt) {
+      var welcome = document.getElementById('welcome');
+      if (welcome) welcome.remove();
+      if (voiceModeActive) { document.getElementById('voice-status').textContent = '🤔 Soch raha hoon...'; document.getElementById('voice-icon').textContent = '🤔'; document.getElementById('voice-transcript').textContent = ''; }
+      messages.push({ role: 'user', content: txt });
+      appendMessage('user', txt);
+      updateChatHistory(txt);
+      document.getElementById('message-input').value = '';
+      callAI(txt);
+    } else if (voiceModeActive && !isLoading) {
+      setTimeout(function(){ if (voiceModeActive) startListening(); }, 500);
+    }
+  };
+  recognition.onerror = function(e) {
+    isRecording = false;
+    document.getElementById('mic-btn').classList.remove('recording');
+    document.getElementById('voice-waves').classList.remove('listening');
+    if (e.error !== 'no-speech') showToast('⚠ Voice error: ' + e.error);
+    if (voiceModeActive && !isLoading) setTimeout(function(){ startListening(); }, 1000);
+  };
+  recognition.start();
+}
+
+function stopListening() {
+  if (recognition) { try { recognition.stop(); } catch(e){} }
+  isRecording = false;
+  document.getElementById('mic-btn').classList.remove('recording');
+  document.getElementById('voice-waves').classList.remove('listening');
+}
+
+function speakText(text) {
+  // Agar auto-speak OFF hai aur voice mode bhi nahi — bilkul mat bolo
+  if (!autoSpeakEnabled && !voiceModeActive) return;
+  if (!window.speechSynthesis) return;
+  // Pehle ki koi bhi awaaz turant band karo
+  stopSpeaking();
+  var clean = text.replace(/<[^>]*>/g,'').replace(/```[\s\S]*?```/g,'code block').replace(/[*_`#]/g,'').replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27FF}]|[\u{2B00}-\u{2BFF}]|[\u{FE00}-\u{FEFF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FFFF}]/gu,'').trim();
+  if (!clean) return;
+  var utt = new SpeechSynthesisUtterance(clean);
+  utt.lang = 'hi-IN'; utt.rate = 0.92; utt.pitch = 1.1; utt.volume = 1;
+  var voices = window.speechSynthesis.getVoices();
+  var v = voices.find(function(x){ return x.lang.indexOf('hi') === 0; }) || voices.find(function(x){ return x.lang.indexOf('en-IN') === 0; });
+  if (v) utt.voice = v;
+  isSpeaking = true;
+  currentUtterance = utt;
+  if (voiceModeActive) { document.getElementById('voice-status').textContent = '🔊 Bol raha hoon...'; document.getElementById('voice-icon').textContent = '🔊'; }
+  utt.onend = function() {
+    isSpeaking = false;
+    currentUtterance = null;
+    if (voiceModeActive && !isLoading) { document.getElementById('voice-status').textContent = '🎤 Bol rahe hain...'; document.getElementById('voice-icon').textContent = '🎤'; setTimeout(function(){ if(voiceModeActive) startListening(); }, 700); }
+  };
+  utt.onerror = function() { isSpeaking = false; currentUtterance = null; if (voiceModeActive && !isLoading) startListening(); };
+  window.speechSynthesis.speak(utt);
+}
+
+// Awaaz turant band karo
+function stopSpeaking() {
+  if (window.speechSynthesis) { window.speechSynthesis.cancel(); }
+  isSpeaking = false;
+  currentUtterance = null;
+}
+
+function speakBubble(btn) {
+  // Agar pehle se bol raha hai to band karo, warna sunao
+  if (isSpeaking) {
+    stopSpeaking();
+    showToast('🔇 Ruk gaya');
+    return;
+  }
+  // Speaker button ka kaam: autoSpeak ON/OFF se independent — directly sunao
+  if (!window.speechSynthesis) return;
+  var bubble = btn.closest('.msg-content').querySelector('.msg-bubble');
+  if (!bubble) return;
+  var savedAutoSpeak = autoSpeakEnabled;
+  autoSpeakEnabled = true; // temporarily allow
+  speakText(bubble.innerText || bubble.textContent);
+  autoSpeakEnabled = savedAutoSpeak;
+}
+
+function startVoiceMode() {
+  if (!window.SpeechRecognition && !window.webkitSpeechRecognition) { showToast('⚠ Chrome browser use karein'); return; }
+  voiceModeActive = true;
+  document.getElementById('voice-overlay').classList.add('active');
+  document.getElementById('voice-mode-btn').classList.add('active');
+  startListening();
+}
+
+function stopVoiceMode() {
+  voiceModeActive = false;
+  document.getElementById('voice-overlay').classList.remove('active');
+  document.getElementById('voice-mode-btn').classList.remove('active');
+  stopListening();
+  stopSpeaking();
+}
+
+function toggleAutoSpeak() {
+  autoSpeakEnabled = !autoSpeakEnabled;
+  document.getElementById('auto-speak-btn').classList.toggle('active', autoSpeakEnabled);
+  showToast(autoSpeakEnabled ? '🔊 Auto-speak ON' : '🔇 Auto-speak OFF');
+}
+
+function sendSuggestion(text) { document.getElementById('message-input').value = text; sendMessage(); }
+function handleKeyDown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 150) + 'px'; }
+function scrollToBottom() { var m = document.getElementById('messages'); setTimeout(function(){ m.scrollTop = m.scrollHeight; }, 50); }
+
+function updateChatHistory(msg) {
+  if (!activeChatId) return;
+  var chat = allChats.find(function(c){ return c.id === activeChatId; });
+  if (chat && chat.title === 'New conversation') {
+    chat.title = msg.length > 28 ? msg.slice(0,28) + '…' : msg;
+    saveChats();
+    renderChatHistory();
+  }
+}
+
+function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function saveChats() {
+  try { localStorage.setItem('sk_chats', JSON.stringify(allChats)); } catch(e){}
+}
+
+// ============================================================
+// LONG-TERM MEMORY SYSTEM — localStorage + JSONBin cloud backup
+// ============================================================
+function loadMemories() {
+  try {
+    var saved = localStorage.getItem('sk_memories');
+    if (saved) userMemories = JSON.parse(saved);
+  } catch(e){ userMemories = []; }
+  // Also load JSONBin bin ID if saved
+  try {
+    var bid = localStorage.getItem('sk_jsonbin_id');
+    if (bid) JSONBIN_BIN_ID = bid;
+  } catch(e){}
+  updateMemoryBadge();
+  // Try to load from cloud (silently)
+  if (JSONBIN_API_KEY !== 'YOUR_JSONBIN_API_KEY') {
+    loadFromCloud();
+  }
+}
+
+function saveMemories() {
+  try { localStorage.setItem('sk_memories', JSON.stringify(userMemories)); } catch(e){}
+  updateMemoryBadge();
+  // Auto-sync to cloud (silently, no toast)
+  if (JSONBIN_API_KEY !== 'YOUR_JSONBIN_API_KEY') {
+    syncToCloud(true);
+  }
+}
+
+function updateMemoryBadge() {
+  var el = document.getElementById('memory-count-badge');
+  if (el) el.textContent = userMemories.length;
+}
+
+// ── JSONBin Cloud Sync ──
+async function syncToCloud(silent) {
+  if (JSONBIN_API_KEY === 'YOUR_JSONBIN_API_KEY') {
+    showToast('⚠ JSONBin API key set karein file mein'); return;
+  }
+  var btn = document.getElementById('sync-btn');
+  if (btn && !silent) { btn.textContent = '⏳ Syncing...'; btn.disabled = true; }
+  // Build full backup payload: memories + chat summaries
+  var chatSummaries = allChats.map(function(c){
+    return {
+      id: c.id,
+      title: c.title,
+      createdAt: c.createdAt,
+      messageCount: (c.messages||[]).length,
+      // Last 6 messages for context (full history too heavy)
+      recentMessages: (c.messages||[]).slice(-6)
+    };
+  });
+  var payload = {
+    memories: userMemories,
+    chatSummaries: chatSummaries,
+    lastSync: new Date().toISOString(),
+    user: currentUser ? currentUser.name : 'unknown'
+  };
+  try {
+    if (!JSONBIN_BIN_ID) {
+      // Create new bin
+      var res = await fetch('https://api.jsonbin.io/v3/b', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': JSONBIN_API_KEY,
+          'X-Bin-Name': 'SK-Assistant-Memory'
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        var data = await res.json();
+        JSONBIN_BIN_ID = data.metadata.id;
+        localStorage.setItem('sk_jsonbin_id', JSONBIN_BIN_ID);
+        if (!silent) showToast('☁ Cloud pe save ho gaya! Bin ID: ' + JSONBIN_BIN_ID);
+      } else { if (!silent) showToast('⚠ Cloud sync fail: ' + res.status); }
+    } else {
+      // Update existing bin
+      var res2 = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': JSONBIN_API_KEY
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res2.ok) {
+        if (!silent) showToast('☁ Cloud sync ho gaya!');
+      } else { if (!silent) showToast('⚠ Sync fail: ' + res2.status); }
+    }
+  } catch(e) { if (!silent) showToast('⚠ Network error: ' + e.message); }
+  if (btn && !silent) { btn.textContent = '☁ Cloud Sync'; btn.disabled = false; }
+}
+
+async function loadFromCloud() {
+  if (!JSONBIN_BIN_ID) return;
+  try {
+    var res = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID + '/latest', {
+      headers: { 'X-Master-Key': JSONBIN_API_KEY }
+    });
+    if (!res.ok) return;
+    var data = await res.json();
+    var cloud = data.record;
+    if (!cloud || !cloud.memories) return;
+    // Merge: cloud memories + local memories (deduplicate)
+    var merged = cloud.memories.slice();
+    userMemories.forEach(function(m){
+      if (!merged.some(function(cm){ return cm.text === m.text; })) merged.push(m);
+    });
+    userMemories = merged;
+    // Also restore chat history if local is empty
+    if (allChats.length === 0 && cloud.chatSummaries && cloud.chatSummaries.length) {
+      cloud.chatSummaries.forEach(function(cs){
+        allChats.push({
+          id: cs.id,
+          title: cs.title,
+          createdAt: cs.createdAt,
+          messages: cs.recentMessages || []
+        });
+      });
+      saveChats();
+      renderChatHistory();
+    }
+    saveMemories();
+    showToast('☁ Cloud se ' + userMemories.length + ' memories load ho gayi!');
+  } catch(e) { /* silent fail */ }
+}
+
+function addMemory(text) {
+  if (!text || !text.trim()) return;
+  var norm = text.trim().toLowerCase();
+  if (userMemories.some(function(m){ return m.text.toLowerCase() === norm; })) return;
+  userMemories.push({ id: generateId(), text: text.trim(), date: new Date().toLocaleDateString('hi-IN') });
+  saveMemories();
+}
+
+function addMemoryManual() {
+  var inp = document.getElementById('memory-input');
+  var val = inp.value.trim();
+  if (!val) { showToast('⚠ Kuch likho pehle'); return; }
+  addMemory(val);
+  inp.value = '';
+  renderMemoryList();
+  showToast('🧠 Memory save ho gayi!');
+}
+
+function deleteMemory(id) {
+  userMemories = userMemories.filter(function(m){ return m.id !== id; });
+  saveMemories();
+  renderMemoryList();
+}
+
+function clearAllMemories() {
+  if (!confirm('Saari memories delete karein?')) return;
+  userMemories = [];
+  saveMemories();
+  renderMemoryList();
+  showToast('🗑 Sab memories delete ho gayi');
+}
+
+function openMemoryPanel() {
+  document.getElementById('memory-overlay').style.display = 'flex';
+  renderMemoryList();
+}
+
+function closeMemoryPanel() {
+  document.getElementById('memory-overlay').style.display = 'none';
+}
+
+function renderMemoryList() {
+  var list = document.getElementById('memory-list');
+  if (!list) return;
+  if (!userMemories.length) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;padding:20px 0;">Abhi koi memory nahi.<br/>Baat karo — main apne aap yaad rakhta hoon! 🧠</div>';
+    return;
+  }
+  list.innerHTML = '';
+  userMemories.slice().reverse().forEach(function(m) {
+    var item = document.createElement('div');
+    item.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:9px 12px;display:flex;align-items:flex-start;gap:8px;';
+    item.innerHTML = '<span style="flex:1;font-size:13px;color:var(--text);line-height:1.5;">' + escapeHtml(m.text) + '</span><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;"><span style="font-size:10px;color:var(--text-muted);">' + (m.date||'') + '</span><button onclick="deleteMemory(\'' + m.id + '\')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;" title="Delete">✕</button></div>';
+    list.appendChild(item);
+  });
+}
+
+// Auto-extract memory from user messages
+function autoExtractMemory(text) {
+  if (!text || text.length < 5) return;
+  var t = text.trim();
+
+  var patterns = [
+    { r: /mera naam (.+?) hai/i, fmt: function(m){ var n=m[1].trim(); if(!userName){userName=n.split(' ')[0];} return 'User ka naam: ' + n; } },
+    { r: /my name is (.+)/i, fmt: function(m){ var n=m[1].trim(); if(!userName){userName=n.split(' ')[0];} return 'User ka naam: ' + n; } },
+    { r: /call me (.+)/i, fmt: function(m){ var n=m[1].trim(); if(!userName){userName=n.split(' ')[0];} return 'User ko bulao: ' + n; } },
+    { r: /main (.+?) hoon/i, fmt: function(m){ return 'User: ' + m[1].trim(); } },
+    { r: /i am (.+)/i, fmt: function(m){ return 'User hai: ' + m[1].trim(); } },
+    { r: /mujhe (.+?) pasand hai/i, fmt: function(m){ return 'Pasand: ' + m[1].trim(); } },
+    { r: /mujhe (.+?) pasand nahi/i, fmt: function(m){ return 'Na-pasand: ' + m[1].trim(); } },
+    { r: /i love (.+)/i, fmt: function(m){ return 'Pasand: ' + m[1].trim(); } },
+    { r: /i hate (.+)/i, fmt: function(m){ return 'Na-pasand: ' + m[1].trim(); } },
+    { r: /i like (.+)/i, fmt: function(m){ return 'Pasand: ' + m[1].trim(); } },
+    { r: /i don'?t like (.+)/i, fmt: function(m){ return 'Na-pasand: ' + m[1].trim(); } },
+    { r: /main (.+?) mein rehta/i, fmt: function(m){ return 'User rehta hai: ' + m[1].trim(); } },
+    { r: /main (.+?) mein rehti/i, fmt: function(m){ return 'User rehti hai: ' + m[1].trim(); } },
+    { r: /i live in (.+)/i, fmt: function(m){ return 'Sheher: ' + m[1].trim(); } },
+    { r: /i work (?:at|in|as) (.+)/i, fmt: function(m){ return 'Kaam: ' + m[1].trim(); } },
+    { r: /main (.+?) ka student hoon/i, fmt: function(m){ return 'Student: ' + m[1].trim(); } },
+    { r: /meri age (.+?) hai/i, fmt: function(m){ return 'Umar: ' + m[1].trim(); } },
+    { r: /i am (\d+) years? old/i, fmt: function(m){ return 'Umar: ' + m[1].trim() + ' saal'; } },
+    { r: /yaad rakho (?:ki )?(.+)/i, fmt: function(m){ return m[1].trim(); } },
+    { r: /remember (?:that )?(.+)/i, fmt: function(m){ return m[1].trim(); } },
+    { r: /save karo (?:ki )?(.+)/i, fmt: function(m){ return m[1].trim(); } },
+    { r: /note karo (?:ki )?(.+)/i, fmt: function(m){ return m[1].trim(); } },
+  ];
+
+  patterns.forEach(function(p) {
+    var match = t.match(p.r);
+    if (match) {
+      var memText = p.fmt(match);
+      if (memText && memText.length > 3 && memText.length < 120) {
+        addMemory(memText);
+      }
+    }
+  });
+}
+
+// Also save chat messages to memories periodically (conversation history)
+function saveConversationSnapshot() {
+  if (!messages.length) return;
+  var chat = allChats.find(function(c){ return c.id === activeChatId; });
+  if (!chat) return;
+  // Auto-sync to cloud with full recent context
+  if (JSONBIN_API_KEY !== 'YOUR_JSONBIN_API_KEY') {
+    syncToCloud(true);
+  }
+}
+
+function loadChats() {
+  try {
+    var saved = localStorage.getItem('sk_chats');
+    if (saved) allChats = JSON.parse(saved);
+  } catch(e){ allChats = []; }
+}
+
+function renderChatHistory() {
+  var hist = document.getElementById('chat-history');
+  hist.innerHTML = '';
+  if (!allChats.length) return;
+  // Today vs older
+  var today = new Date(); today.setHours(0,0,0,0);
+  var yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
+  var todayChats = [], yesterdayChats = [], olderChats = [];
+  allChats.forEach(function(c){
+    var d = new Date(c.createdAt); d.setHours(0,0,0,0);
+    if (d >= today) todayChats.push(c);
+    else if (d >= yesterday) yesterdayChats.push(c);
+    else olderChats.push(c);
+  });
+  function renderGroup(label, chats) {
+    if (!chats.length) return;
+    var lbl = document.createElement('div');
+    lbl.className = 'history-section-label';
+    lbl.textContent = label;
+    hist.appendChild(lbl);
+    chats.forEach(function(c){ hist.appendChild(makeChatItem(c)); });
+  }
+  renderGroup('Aaj', todayChats);
+  renderGroup('Kal', yesterdayChats);
+  renderGroup('Pehle', olderChats);
+}
+
+function makeChatItem(chat) {
+  var item = document.createElement('div');
+  item.className = 'history-item' + (chat.id === activeChatId ? ' active' : '');
+  item.dataset.id = chat.id;
+  item.innerHTML = '<span class="chat-icon">💬</span><span class="chat-title">' + escapeHtml(chat.title) + '</span><button class="delete-btn" title="Delete" onclick="deleteChat(event,\'' + chat.id + '\')">✕</button>';
+  item.addEventListener('click', function(){ switchChat(chat.id); });
+  return item;
+}
+
+function switchChat(id) {
+  // Save current messages to active chat
+  if (activeChatId) {
+    var cur = allChats.find(function(c){ return c.id === activeChatId; });
+    if (cur) cur.messages = messages.slice();
+    saveChats();
+  }
+  activeChatId = id;
+  var chat = allChats.find(function(c){ return c.id === id; });
+  if (!chat) return;
+  messages = chat.messages.slice();
+  stopVoiceMode();
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  // Render messages
+  var msgsEl = document.getElementById('messages');
+  if (!messages.length) {
+    var firstName = currentUser ? currentUser.name.split(' ')[0] : 'there';
+    msgsEl.innerHTML = '<div class="welcome" id="welcome"><div class="welcome-icon">✦</div><h2>Hello, <span id="welcome-name">' + firstName + '</span>!</h2><p>Main SK Assistant hoon — Shivam Sir ne design kiya hai. Text ya voice mein baat karo!</p><div class="suggestions"><div class="suggestion-chip" onclick="sendSuggestion(\'Aaj ka cricket score kya hai?\')">🏏 Cricket Score</div><div class="suggestion-chip" onclick="sendSuggestion(\'Python mein for loop likhao\')">Python code</div><div class="suggestion-chip" onclick="sendSuggestion(\'Aaj ka mausam kaisa hai India mein?\')">🌤 Mausam</div><div class="suggestion-chip" onclick="sendSuggestion(\'Business plan banao\')">Business plan</div></div></div>';
+  } else {
+    msgsEl.innerHTML = '';
+    messages.forEach(function(m){
+      appendMessage(m.role === 'user' ? 'user' : 'ai', m.content);
+    });
+    scrollToBottom();
+  }
+  renderChatHistory();
+}
+
+function deleteChat(e, id) {
+  e.stopPropagation();
+  allChats = allChats.filter(function(c){ return c.id !== id; });
+  saveChats();
+  if (activeChatId === id) {
+    if (allChats.length) switchChat(allChats[0].id);
+    else newChat();
+    return;
+  }
+  renderChatHistory();
+}
+
+function newChat() {
+  // Save current messages
+  if (activeChatId) {
+    var cur = allChats.find(function(c){ return c.id === activeChatId; });
+    if (cur) cur.messages = messages.slice();
+  }
+  var id = generateId();
+  var chat = { id: id, title: 'New conversation', messages: [], createdAt: Date.now() };
+  allChats.unshift(chat);
+  activeChatId = id;
+  messages = [];
+  saveChats();
+  stopVoiceMode();
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  var firstName = currentUser ? currentUser.name.split(' ')[0] : 'there';
+  document.getElementById('messages').innerHTML = '<div class="welcome" id="welcome"><div class="welcome-icon">✦</div><h2>Hello, <span id="welcome-name">' + firstName + '</span>!</h2><p>Main SK Assistant hoon — Shivam Sir ne design kiya hai. Text ya voice mein baat karo! 🔍 Google Search bhi ON kar sakte ho!</p><div class="suggestions"><div class="suggestion-chip" onclick="sendSuggestion(\'Aaj ka cricket score kya hai?\')">🏏 Cricket Score</div><div class="suggestion-chip" onclick="sendSuggestion(\'Python mein for loop likhao\')">Python code</div><div class="suggestion-chip" onclick="sendSuggestion(\'Aaj ka mausam kaisa hai India mein?\')">🌤 Mausam</div><div class="suggestion-chip" onclick="sendSuggestion(\'Business plan banao\')">Business plan</div></div></div>';
+  renderChatHistory();
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 3000);
+}
+
+// ============================================================
+// THEME TOGGLE (Dark / Light)
+// ============================================================
+var isLightMode = localStorage.getItem('sk_theme') === 'light';
+function applyTheme() {
+  if (isLightMode) {
+    document.body.classList.add('light-mode');
+    document.getElementById('theme-toggle-btn').textContent = '☀️';
+  } else {
+    document.body.classList.remove('light-mode');
+    document.getElementById('theme-toggle-btn').textContent = '🌙';
+  }
+}
+function toggleTheme() {
+  isLightMode = !isLightMode;
+  localStorage.setItem('sk_theme', isLightMode ? 'light' : 'dark');
+  applyTheme();
+  showToast(isLightMode ? '☀️ Light mode ON' : '🌙 Dark mode ON');
+}
+
+// PWA Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
+</script>
+</body>
+</html>
